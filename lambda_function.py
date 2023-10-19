@@ -1,9 +1,9 @@
 import boto3
 import os
 from datetime import datetime
+import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
-import pandas as pd
 from dotenv import load_dotenv
 import json
 
@@ -19,7 +19,6 @@ BUCKET_NAME = os.environ.get("BUCKET_NAME")
 # Initialize Boto3 S3 Client
 s3 = boto3.client("s3", aws_access_key_id=AWS_ACCESS_KEY_ID, aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
 
-# Convert data to DataFrame
 def convert_to_pandas(data_list):
     try:
         return pd.DataFrame(data_list)
@@ -51,7 +50,7 @@ def store_data_in_s3(data, folder):
 
 def handler(context, event):
     try:
-        df = convert_to_pandas(context['tweets'])
+        df = convert_to_pandas(context)
 
         store_data_in_s3(df, 'tweets')
 
@@ -61,3 +60,6 @@ def handler(context, event):
         }
     except Exception as error:
         print(error)
+
+if __name__ == "__main__":
+    handler([{"id": 1, "content": "test"}], "")
