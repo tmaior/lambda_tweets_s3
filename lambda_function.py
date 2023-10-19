@@ -61,5 +61,3 @@ def handler(context, event):
     except Exception as error:
         print(error)
 
-if __name__ == "__main__":
-    handler([{"id": 1, "content": "test"}], "")
