@@ -17,7 +17,9 @@ AWS_SECRET_ACCESS_KEY = os.environ.get("AWS_SECRET_ACCESS_KEY_ENV")
 BUCKET_NAME = os.environ.get("BUCKET_NAME")
 
 # Initialize Boto3 S3 Client
-s3 = boto3.client("s3", aws_access_key_id=AWS_ACCESS_KEY_ID, aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
+s3 = boto3.client("s3", aws_access_key_id=AWS_ACCESS_KEY_ID,
+                  aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
+
 
 def convert_to_pandas(data_list):
     try:
@@ -26,27 +28,38 @@ def convert_to_pandas(data_list):
         print(error)
 
 # store the dataframe on s3
+
+
 def store_data_in_s3(data, folder):
     try:
+        # Create an in-me  mory buffer for raw data
+        raw_data_buffer = io.StringIO()
+        data.to_json(raw_data_buffer, orient="records", lines=True)
+        raw_data = raw_data_buffer.getvalue()
+
+        # Create an in-memory buffer for processed data
+        processed_data_buffer = io.BytesIO()
+        table = pa.Table.from_pandas(data)
+        pq.write_table(table, processed_data_buffer)
+        processed_data_buffer.seek(0)  # Reset the buffer position
+
         # Store data in S3 in the required directory structure and format.
         timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
         raw_data_key = f"raw_data/{folder}/{timestamp}.json"
-        directory_path = f"processed_data/{folder}/"
-        processed_data_key = f"{directory_path}{timestamp}.parquet"
+        processed_data_key = f"processed_data/{folder}/{timestamp}.parquet"
 
-        # create the file as parquet
-        if not os.path.exists(directory_path):
-            os.makedirs(directory_path)
+        # Upload raw data to S3
+        s3 = boto3.client('s3')
+        s3.put_object(Bucket=BUCKET_NAME, Key=raw_data_key, Body=raw_data)
 
-        # Convert data to parquet and store in AWS
-        table = pa.Table.from_pandas(data)
-        pq.write_table(table, processed_data_key)
-        s3.upload_file(processed_data_key, BUCKET_NAME, processed_data_key)
+        # Upload processed data to S3
+        s3.upload_fileobj(processed_data_buffer,
+                          BUCKET_NAME, processed_data_key)
 
-        # Store raw data
-        s3.put_object(Bucket=BUCKET_NAME, Key=raw_data_key, Body=json.dumps(data.to_json(orient="records"), indent=4))
+        return "Data uploaded successfully to S3"
     except Exception as error:
-        print(error)
+        return str(error)
+
 
 def handler(context, event):
     try:
@@ -60,4 +73,3 @@ def handler(context, event):
         }
     except Exception as error:
         print(error)
-
