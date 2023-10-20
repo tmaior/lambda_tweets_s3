@@ -4,10 +4,9 @@ from datetime import datetime
 import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
-from dotenv import load_dotenv
 import json
+import io
 
-load_dotenv()
 
 # AWS Credentials
 AWS_ACCESS_KEY_ID = os.environ.get("AWS_ACCESS_KEY_ID_ENV")
@@ -72,4 +71,4 @@ def handler(context, event):
             "body": json.dumps("Data uploaded")
         }
     except Exception as error:
-        print(error)
+        return error
