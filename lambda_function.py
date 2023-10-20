@@ -19,6 +19,9 @@ BUCKET_NAME = os.environ.get("BUCKET_NAME")
 s3 = boto3.client("s3", aws_access_key_id=AWS_ACCESS_KEY_ID,
                   aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
 
+# Configurar o cliente do AWS Lambda
+lambda_client = boto3.client('lambda')
+function_name = 'aiidea-llc-dev-lambda-triggers-processing-job'
 
 def convert_to_pandas(data_list):
     try:
@@ -65,6 +68,12 @@ def handler(context, event):
         df = convert_to_pandas(context)
 
         store_data_in_s3(df, 'tweets')
+        
+        response = lambda_client.invoke(
+                        FunctionName=function_name,
+                        InvocationType='RequestResponse',
+                        Payload=[]
+                    )
 
         return {
             "code": 201,
