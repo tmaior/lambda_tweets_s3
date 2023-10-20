@@ -72,7 +72,7 @@ def handler(context, event):
         response = lambda_client.invoke(
                         FunctionName=function_name,
                         InvocationType='RequestResponse',
-                        Payload=[]
+                        Payload=json.dumps([])
                     )
 
         return {
@@ -80,4 +80,8 @@ def handler(context, event):
             "body": json.dumps("Data uploaded")
         }
     except Exception as error:
-        return error
+        error_message = str(error)
+        return {
+            "statusCode": 400,
+            "body": error_message
+        }
